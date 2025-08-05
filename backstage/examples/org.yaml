@@ -1,0 +1,19 @@
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: admin
+spec:
+  profile:
+    displayName: Administrador
+    email: admin@lab.local
+  memberOf: [admins]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: admins
+spec:
+  type: team
+  profile:
+    displayName: Administradores
+  children: []

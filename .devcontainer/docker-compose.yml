@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  backstage-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=backstage
+      - POSTGRES_PASSWORD=backstage
+      - POSTGRES_DB=backstage_plugin_catalog
+    ports:
+      - "3000:3000"
+      - "7007:7007"
+    networks:
+      - backstage-network
+
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: backstage
+      POSTGRES_PASSWORD: backstage
+      POSTGRES_DB: backstage_plugin_catalog
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - backstage-network
+
+volumes:
+  postgres-data:
+
+networks:
+  backstage-network:
+    driver: bridge

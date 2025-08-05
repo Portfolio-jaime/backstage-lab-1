@@ -1,0 +1,22 @@
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: guest
+  description: Usuario de ejemplo para el laboratorio
+spec:
+  profile:
+    displayName: Usuario Invitado
+    email: guest@example.com
+    picture: https://via.placeholder.com/150
+  memberOf: [guests]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: guests
+  description: Grupo de usuarios invitados
+spec:
+  type: team
+  profile:
+    displayName: Invitados
+  children: []

@@ -1,0 +1,37 @@
+{
+  "name": "Backstage Lab",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "backstage-dev",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "remoteUser": "arheanja",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-json"
+      ],
+      "settings": {
+        "typescript.preferences.useLabelDetailsInCompletionEntries": true
+      }
+    }
+  },
+  "postCreateCommand": "echo 'DevContainer ready for Backstage development!'",
+  "forwardPorts": [3000, 7007],
+  "portsAttributes": {
+    "3000": {
+      "label": "Frontend",
+      "onAutoForward": "notify"
+    },
+    "7007": {
+      "label": "Backend",
+      "onAutoForward": "notify"
+    }
+  }
+}

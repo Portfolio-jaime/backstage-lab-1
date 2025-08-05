@@ -1,0 +1,38 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: hello-world-template
+  title: Hello World
+  description: Plantilla de ejemplo para el laboratorio
+  tags:
+    - recommended
+    - react
+spec:
+  owner: backstage/techdocs-core
+  type: service
+  parameters:
+    - title: Configuración básica
+      required:
+        - name
+      properties:
+        name:
+          title: Nombre
+          type: string
+          description: Nombre único para el componente
+        description:
+          title: Descripción
+          type: string
+          description: Descripción del componente
+  steps:
+    - id: log
+      name: Log message
+      action: debug:log
+      input:
+        message: 'Hello, ${{ parameters.name }}!'
+  output:
+    text:
+      - title: Mensaje
+        content: |
+          ## Hola ${{ parameters.name }}
+
+          Tu componente ha sido creado exitosamente!
