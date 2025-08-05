@@ -9,8 +9,13 @@ Un entorno de desarrollo completo para **Backstage** con integración GitHub, au
 - [🔐 Configuración de GitHub](#-configuración-de-github)
 - [🚀 Inicio Rápido](#-inicio-rápido)
 - [🌟 Características](#-características)
-- [🔧 Troubleshooting](#-troubleshooting)
-- [📚 Documentación Técnica](#-documentación-técnica)
+- [📚 Documentación del Proyecto](#-documentación-del-proyecto)
+- [⚙️ Scripts de Configuración](#️-scripts-de-configuración)
+- [🏗️ Arquitectura y Estructura del Proyecto](#️-arquitectura-y-estructura-del-proyecto)
+- [🎯 Próximos Pasos Sugeridos](#-próximos-pasos-sugeridos)
+- [🤝 Contribución](#-contribución)
+- [📄 Licencia](#-licencia)
+- [🆘 Soporte](#-soporte)
 
 ---
 
@@ -218,197 +223,135 @@ Al acceder verás dos botones:
 
 ---
 
-## 🔧 Troubleshooting
+## 📚 Documentación del Proyecto
 
-### ❌ **Error: "Failed to sign in as a guest"**
+Aquí encontrarás la documentación detallada sobre la arquitectura, configuración y resolución de problemas del proyecto:
 
-**Causa:** Backend no configurado correctamente
-
-**Solución:**
-```bash
-# 1. Verificar que el backend esté corriendo
-curl http://localhost:7007/api/auth/guest/refresh
-
-# 2. Revisar variables de entorno
-cd backstage && cat .env | grep BACKEND_SECRET
-
-# 3. Reiniciar Backstage
-# Ctrl+C para parar, luego:
-yarn start
-```
-
-### ❌ **Error: "Could not fetch catalog entities"**
-
-**Causa:** Problemas de conectividad con PostgreSQL
-
-**Solución:**
-```bash
-# 1. Verificar PostgreSQL está corriendo
-docker ps | grep postgres
-
-# 2. Verificar conectividad desde el backend
-docker exec backstage-lab-1_devcontainer-postgres-1 pg_isready -U backstage
-
-# 3. Verificar configuración de base de datos
-cd backstage && cat .env | grep POSTGRES
-
-# 4. Reiniciar servicios si es necesario
-docker-compose -f .devcontainer/docker-compose.yml restart
-```
-
-### ❌ **Error: "GitHub integration not working"**
-
-**Causa:** Token o configuración OAuth incorrecta
-
-**Solución:**
-```bash
-# 1. Verificar token GitHub
-curl -H "Authorization: token YOUR_GITHUB_TOKEN" https://api.github.com/user
-
-# 2. Verificar permisos del token
-# Debe tener: repo, read:org, read:user, user:email
-
-# 3. Verificar OAuth App callback URL
-# Debe ser exactamente: http://localhost:7007/api/auth/github/handler/frame
-
-# 4. Revisar variables en .env
-cd backstage && cat .env | grep -E "(GITHUB|AUTH_GITHUB)"
-```
-
-### ❌ **Error: "DevContainer build failed"**
-
-**Causa:** Problemas con Docker o construcción de imagen
-
-**Solución:**
-```bash
-# 1. Verificar Docker Desktop está corriendo
-docker version
-
-# 2. Limpiar containers y imágenes
-docker system prune -a
-
-# 3. Reconstruir DevContainer
-# En VS Code: Ctrl+Shift+P → "Dev Containers: Rebuild Container"
-
-# 4. Si persiste, revisar logs
-# Ver logs de construcción en VS Code Output panel
-```
-
-### 🔍 **Logs y Debugging**
-
-#### Backend Logs
-```bash
-cd backstage
-yarn start:backend
-# Logs aparecerán en la consola
-```
-
-#### Frontend Logs
-```bash
-cd backstage
-yarn workspace app start
-# Logs en consola del navegador (F12)
-```
-
-#### Database Logs
-```bash
-docker logs backstage-lab-1_devcontainer-postgres-1
-```
-
-#### Verificar Configuración
-```bash
-# Variables de entorno
-env | grep -E "(GITHUB|POSTGRES|BACKEND|AUTH)"
-
-# Estado de servicios
-curl http://localhost:7007/healthcheck
-curl http://localhost:3000
-
-# Test de conectividad
-nc -z postgres 5432  # PostgreSQL
-nc -z localhost 7007 # Backend
-nc -z localhost 3000 # Frontend
-```
+- [**Arquitectura del Sistema**](docs/ARCHITECTURE.md)
+- [**Guía de Submódulos Git**](docs/git-submodules-guide.md)
+- [**Configuración de GitHub**](docs/GITHUB-SETUP.md)
+- [**Plan de Resumen**](docs/resume-plan.md)
+- [**Guía de Resolución de Problemas (Troubleshooting)**](docs/TROUBLESHOOTING.md)
 
 ---
 
-## 📚 Documentación Técnica
+## ⚙️ Scripts de Configuración
 
-### 🏗️ **Arquitectura del Sistema**
+Estos scripts te ayudarán a configurar y gestionar tu entorno de desarrollo:
 
+- [**`setup-backstage.sh`**](setup-backstage.sh): Configura la aplicación Backstage, incluyendo dependencias, base de datos y archivos de configuración.
+- [**`setup-github.sh`**](setup-github.sh): Asiste en la configuración de la integración de GitHub (tokens y OAuth App).
+- [**`setup-simple.sh`**](setup-simple.sh): Un script de configuración simplificado (si aplica).
+
+---
+
+## 🏗️ Arquitectura y Estructura del Proyecto
+
+### 🔄 Diagrama de Componentes Detallado
+
+```mermaid
+flowchart TD
+    subgraph "🖥️ DEVELOPMENT MACHINE"
+        A[📝 VS Code + DevContainers] --> B(🌐 Browser)
+        A --> C(🔧 DB Tools)
+        B -- HTTP --> D[🐳 DOCKER ENVIRONMENT]
+        C -- TCP --> D
+    end
+
+    subgraph "🐳 DOCKER ENVIRONMENT"
+        D --> E[📦 backstage-dev Container]
+        D --> F[🗄️ postgres Container]
+
+        subgraph "📦 backstage-dev Container"
+            G[🌐 FRONTEND] <--> H[⚙️ BACKEND]
+            H --> I[📋 CONFIGURATION]
+            H --> J[🛠️ DEVELOPMENT TOOLS]
+            I --> K(app-config.local.yaml)
+            I --> L(.env)
+            I --> M(examples/)
+            J --> N(Runtime: Node.js 18.x)
+            J --> O(Package: Yarn 4.4.1)
+            J --> P(VCS: Git + GitHub CLI)
+            J --> Q(Editor: Vim)
+            J --> R(Network: netcat)
+            J --> S(DB Client: PostgreSQL client)
+            J --> T(Build: build-essential)
+        end
+
+        H -- SQL Queries --> F
+        F -- TCP :5432 --> D
+    end
+
+    subgraph "🗄️ postgres Container"
+        U[🐘 PostgreSQL 15] --> V[💾 Persistent Data]
+        U --> W(Databases: backstage_plugin_...) 
+        U --> X(Users: backstage)
+        V --> Y(Catalog entities)
+        V --> Z(User profiles)
+        V --> AA(Group memberships)
+        V --> BB(Templates & configs)
+        V --> CC(Authentication data)
+        V --> DD(Search indexes)
+    end
+
+    subgraph "🌍 EXTERNAL ACCESS"
+        EE[📱 Frontend Access] --> FF(http://localhost:3000)
+        GG[📡 API Access] --> HH(http://localhost:7007)
+        II[🔍 DB Access] --> JJ(:5432)
+        KK[🔐 Authentication: GUEST MODE ENABLED]
+        LL[👤 Users: guest, admin]
+        MM[👥 Groups: guests, admins]
+    end
+
+    D -- Port Forwarding --> EE
+    D -- Port Forwarding --> GG
+    D -- Port Forwarding --> II
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            🖥️  HOST MACHINE                                │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  VS Code + Dev Containers Extension                                         │
-│  ↓ Connects to                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        🐳 DEVCONTAINER ENVIRONMENT                         │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │                    📦 backstage-dev Container                       │  │
-│  │                                                                     │  │
-│  │  ┌─────────────────────────┐    ┌─────────────────────────────────┐ │  │
-│  │  │    🌐 FRONTEND          │    │        ⚙️  BACKEND             │ │  │
-│  │  │   React + TypeScript    │◀──▶│      Node.js + Express         │ │  │
-│  │  │   Port: 3000            │    │      Port: 7007                │ │  │
-│  │  │   Material-UI Theme     │    │      GraphQL + REST           │ │  │
-│  │  │   🔐 OAuth Login        │    │      🔐 Auth Backend           │ │  │
-│  │  └─────────────────────────┘    └─────────────────────────────────┘ │  │
-│  │                    ▲                           │                     │  │
-│  │                    │                           ▼                     │  │
-│  │  ┌─────────────────────────────────────────────────────────────────┐ │  │
-│  │  │              📋 CONFIGURATION LAYER                             │ │  │
-│  │  │  • app-config.yaml (main config)                               │ │  │
-│  │  │  • .env (secrets & variables)                                  │ │  │
-│  │  │  • examples/ (sample data)                                     │ │  │
-│  │  │  • 🐙 GitHub Integration                                       │ │  │
-│  │  └─────────────────────────────────────────────────────────────────┘ │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-│                                    │                                       │
-│                                    ▼ SQL Queries + Connection Pool         │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │                      🗄️  postgres Container                        │  │
-│  │                                                                     │  │
-│  │    ┌─────────────────────────┐    ┌─────────────────────────────┐   │  │
-│  │    │     PostgreSQL 15       │    │    💾 Persistent Storage   │   │  │
-│  │    │     Port: 5432          │───▶│    postgres-data volume    │   │  │
-│  │    │     Multi-DB Support    │    │                            │   │  │
-│  │    │                         │    │  📊 Stores:                │   │  │
-│  │    │  🗃️  Databases:          │    │  • Catalog entities        │   │  │
-│  │    │  • backstage_plugin_... │    │  • User sessions           │   │  │
-│  │    │  • auth & permissions   │    │  • GitHub integration     │   │  │
-│  │    │  • search indexes       │    │  • Templates & workflows   │   │  │
-│  │    └─────────────────────────┘    └─────────────────────────────┘   │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼ External Integrations
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          🌐 EXTERNAL SERVICES                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  🐙 GitHub.com          📊 Monitoring           🔐 External Auth            │
-│  ├─ OAuth App           ├─ Health checks        ├─ GitHub OAuth             │
-│  ├─ Personal Token      ├─ Metrics              ├─ User sessions            │
-│  ├─ Webhook events      └─ Logging              └─ Permission sync          │
-│  └─ Repository sync                                                         │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+
+### 📊 Flujo de Datos del Catálogo
+
+```mermaid
+flowchart TD
+    subgraph "FUENTES DE DATOS"
+        A[📁 entities.yaml] --> B(👥 entities.yaml)
+        C[🏢 org.yaml] --> D(🏢 org.yaml)
+        E[🏗️ template/] --> F(🏗️ template/)
+    end
+
+    subgraph "PROCESAMIENTO"
+        B --> G[📖 Catalog Processor]
+        D --> G
+        F --> G
+        G --> H[✅ Validation]
+        H --> I[🔗 Resolution]
+    end
+
+    subgraph "ALMACENAMIENTO"
+        I --> J[🗄️ catalog_entities]
+        I --> K[👥 catalog_users]
+        I --> L[👥 catalog_groups]
+        I --> M[🏗️ catalog_locations]
+    end
+
+    subgraph "API & FRONTEND"
+        N[🎨 Catalog UI] <-- HTTP --> O[🔌 GraphQL API]
+        P[👥 User Management] <-- O
+        Q[🔍 Search Interface] <-- O
+    end
+
+    I --> O
+
+    subgraph "PROCESO DE ACTUALIZACIÓN"
+        R[📂 File Watcher] --> S(🔄 Catalog Processor)
+        S --> T(✅ Validación de nuevas entidades)
+        T --> U(🔗 Resolución de referencias actualizadas)
+        U --> V(💾 Actualización incremental en PostgreSQL)
+        V --> W(🌐 Cache invalidation en API)
+        W --> X(🔄 Frontend actualiza automáticamente via WebSocket)
+    end
 ```
 
-### 🔌 **Puertos y Servicios**
-
-| Puerto | Servicio | Descripción | URL de Acceso |
-|--------|----------|-------------|---------------|
-| 3000   | Frontend | Interfaz React de Backstage | http://localhost:3000 |
-| 7007   | Backend  | API Node.js + GraphQL | http://localhost:7007 |
-| 5432   | PostgreSQL | Base de datos principal | localhost:5432 |
-
-### 📁 **Estructura del Proyecto**
+### 📁 Estructura del Proyecto
 
 ```
 backstage-lab-1/                           # 🏠 Directorio raíz
@@ -417,7 +360,13 @@ backstage-lab-1/                           # 🏠 Directorio raíz
 │   ├── README.md                          # 📖 Esta guía completa
 │   ├── setup-backstage.sh                # 🔧 Script configuración inicial
 │   ├── setup-github.sh                   # 🐙 Script configuración GitHub
-│   └── fix-frontend.sh                   # 🛠️ Herramientas de debugging
+│   ├── setup-simple.sh                   # 🛠️ Herramientas de debugging
+│   └── docs/                              # 📚 Documentación detallada
+│       ├── ARCHITECTURE.md                # 🏗️ Arquitectura del Sistema
+│       ├── git-submodules-guide.md        # 🌳 Guía de Submódulos Git
+│       ├── GITHUB-SETUP.md                # 🐙 Configuración de GitHub
+│       ├── resume-plan.md                 # 📝 Plan de Resumen
+│       └── TROUBLESHOOTING.md             # 🔧 Guía de Resolución de Problemas
 │
 ├── 🐳 DevContainer (Entorno de Desarrollo)
 │   └── .devcontainer/
@@ -462,92 +411,9 @@ backstage-lab-1/                           # 🏠 Directorio raíz
             └── playwright.config.ts       # 🎭 Tests end-to-end
 ```
 
-### 🌐 **URLs y Endpoints Importantes**
-
-#### Frontend URLs
-- **🏠 Homepage**: http://localhost:3000
-- **📊 Catalog**: http://localhost:3000/catalog
-- **🏗️ Templates**: http://localhost:3000/create
-- **👥 Users**: http://localhost:3000/catalog?filters%5Bkind%5D=user
-- **📚 Docs**: http://localhost:3000/docs
-
-#### Backend API Endpoints
-- **🔍 Health Check**: http://localhost:7007/healthcheck
-- **📋 Catalog API**: http://localhost:7007/api/catalog/entities
-- **🔐 Auth Endpoints**: 
-  - Guest: http://localhost:7007/api/auth/guest/refresh
-  - GitHub: http://localhost:7007/api/auth/github/start
-- **📊 GraphQL**: http://localhost:7007/graphql
-
-### 🔄 **Flujo de Autenticación**
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant F as Frontend (3000)
-    participant B as Backend (7007)
-    participant G as GitHub
-    
-    U->>F: Accede a localhost:3000
-    F->>U: Muestra opciones de login
-    
-    alt Guest Access
-        U->>F: Click "Guest Access"
-        F->>B: POST /api/auth/guest/refresh
-        B->>F: Returns guest token
-        F->>U: Logged in as Guest
-    else GitHub OAuth
-        U->>F: Click "Sign in with GitHub"
-        F->>B: GET /api/auth/github/start
-        B->>G: Redirect to GitHub OAuth
-        G->>U: GitHub login page
-        U->>G: Enter credentials
-        G->>B: Callback with auth code
-        B->>G: Exchange code for token
-        G->>B: Returns access token
-        B->>F: Returns Backstage session
-        F->>U: Logged in with GitHub account
-    end
-```
-
-### 📊 **Estado del Laboratorio**
-
-#### ✅ **Componentes Funcionando**
-
-| Componente | Estado | Versión | Descripción |
-|------------|--------|---------|-------------|
-| 🐳 DevContainer | ✅ Operativo | Latest | Node.js 18 + herramientas |
-| 🗄️ PostgreSQL | ✅ Operativo | 15.0 | Base de datos con datos iniciales |
-| ⚙️ Backend | ✅ Operativo | Latest | API completa + auth + GitHub |
-| 🌐 Frontend | ✅ Operativo | Latest | React app + Material-UI |
-| 🔐 Guest Auth | ✅ Configurado | - | Acceso inmediato para desarrollo |
-| 🐙 GitHub OAuth | ✅ Configurado | - | Autenticación con GitHub |
-| 📦 Catalog | ✅ Poblado | - | Entidades de ejemplo cargadas |
-| 🏗️ Templates | ✅ Disponibles | - | Hello World template funcional |
-
-#### 🎯 **Funcionalidades Verificadas**
-
-- ✅ **Login Guest**: Acceso inmediato sin configuración
-- ✅ **Login GitHub**: OAuth completo funcionando  
-- ✅ **Catalog browsing**: Navegación de entidades
-- ✅ **GitHub integration**: Importación de repos
-- ✅ **Template creation**: Scaffolding de proyectos
-- ✅ **TechDocs**: Documentación integrada
-- ✅ **Search**: Búsqueda global
-- ✅ **User management**: Gestión de usuarios y grupos
-
-#### 📈 **Métricas del Laboratorio**
-
-- **🚀 Tiempo de setup**: ~5-10 minutos
-- **💾 Espacio en disco**: ~2GB (incluyendo images)
-- **🧠 Memoria RAM**: ~1GB en uso
-- **⚡ Tiempo de inicio**: ~30-60 segundos
-- **🔧 Dependencias**: ~3000 paquetes npm
-- **📊 Entidades de ejemplo**: 8 entidades cargadas
-
 ---
 
-## 🎯 **Próximos Pasos Sugeridos**
+## 🎯 Próximos Pasos Sugeridos
 
 ### 🔰 **Para Principiantes**
 1. **Explorar el Catalog** - Navega las entidades precargadas

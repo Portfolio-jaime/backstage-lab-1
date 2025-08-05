@@ -50,8 +50,5 @@
       "prettier --write"
     ]
   },
-  "packageManager": "yarn@4.4.1",
-  "dependencies": {
-    "@backstage/plugin-auth-backend-module-github-provider": "^0.3.5"
-  }
+  "packageManager": "yarn@4.4.1"
 }

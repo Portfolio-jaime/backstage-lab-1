@@ -3,59 +3,82 @@
 # Script de configuración para Backstage Lab
 echo "🚀 Configurando Backstage Lab..."
 
-# Buscar el directorio de la aplicación Backstage
-BACKSTAGE_DIR=""
-for dir in backstage backstage-lab backstage-*; do
-    if [ -d "$dir" ] && [ -f "$dir/package.json" ]; then
-        BACKSTAGE_DIR="$dir"
-        break
-    fi
-done
+# Define el nombre del directorio de la aplicación Backstage
+BACKSTAGE_APP_NAME="backstage"
 
-if [ -z "$BACKSTAGE_DIR" ]; then
-    echo "❌ No se encontró el directorio de la aplicación Backstage"
-    echo "Por favor ejecuta primero: npx @backstage/create-app@latest"
-    echo "Directorios disponibles:"
-    ls -la
-    exit 1
+# 1. Crear la aplicación Backstage si no existe
+if [ ! -d "$BACKSTAGE_APP_NAME" ]; then
+    echo "✨ Creando nueva aplicación Backstage con npx @backstage/create-app@latest..."
+    npx @backstage/create-app@latest --skip-install "$BACKSTAGE_APP_NAME" # --skip-install to install dependencies later
+    if [ $? -ne 0 ]; then
+        echo "❌ Falló la creación de la aplicación Backstage."
+        exit 1
+    fi
+else
+    echo "✅ Directorio de Backstage '$BACKSTAGE_APP_NAME' ya existe. Saltando la creación."
 fi
 
-echo "📁 Encontrado directorio de Backstage: $BACKSTAGE_DIR"
-cd "$BACKSTAGE_DIR"
+echo "📁 Entrando al directorio de Backstage: $BACKSTAGE_APP_NAME"
+cd "$BACKSTAGE_APP_NAME" || { echo "❌ No se pudo cambiar al directorio $BACKSTAGE_APP_NAME"; exit 1; }
 
+# 2. Instalar dependencias de base de datos (pg)
 echo "📦 Instalando dependencias de base de datos..."
-# Instalar el cliente de PostgreSQL
 yarn --cwd packages/backend add pg
 yarn --cwd packages/backend add @types/pg --dev
 
-echo "📝 Copiando configuración de base de datos..."
-# Copiar la configuración local
-cp ../app-config.local.yaml ./app-config.local.yaml
+# 3. Generar o copiar app-config.local.yaml
+echo "📝 Verificando y copiando/generando app-config.local.yaml..."
+APP_CONFIG_LOCAL_PATH="../app-config.local.yaml"
+if [ -f "$APP_CONFIG_LOCAL_PATH" ]; then
+    cp "$APP_CONFIG_LOCAL_PATH" ./app-config.local.yaml
+    echo "✅ app-config.local.yaml copiado desde el directorio raíz."
+else
+    echo "⚠️ app-config.local.yaml no encontrado en el directorio raíz. Generando uno por defecto."
+    cat > app-config.local.yaml << 'EOF'
+app:
+  baseUrl: http://localhost:3000
 
-echo "🗄️ Verificando conexión a PostgreSQL..."
-# Instalar netcat si no está disponible
-if ! command -v nc &> /dev/null; then
-    echo "📦 Instalando netcat..."
-    apt-get update -qq && apt-get install -y -qq netcat-openbsd
+backend:
+  baseUrl: http://localhost:7007
+  listen:
+    port: 7007
+  database:
+    client: pg
+    connection:
+      host: ${POSTGRES_HOST}
+      port: ${POSTGRES_PORT}
+      user: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+      database: ${POSTGRES_DB}
+  # ... other backend configurations
+EOF
+    echo "✅ app-config.local.yaml generado con configuración de PostgreSQL por defecto."
 fi
 
-# Verificar que PostgreSQL está disponible
-if ! nc -z postgres 5432; then
-    echo "❌ PostgreSQL no está disponible en postgres:5432"
-    echo "Verifica que el container de PostgreSQL esté corriendo"
-    echo "Intentando con timeout más largo..."
-    sleep 5
-    if ! nc -z postgres 5432; then
-        echo "❌ PostgreSQL sigue sin responder"
-        echo "Puedes continuar manualmente - la configuración se aplicará"
+# 4. Verificar conexión a PostgreSQL (dentro del devcontainer, 'postgres' es el hostname)
+echo "🗄️ Verificando conexión a PostgreSQL..."
+if command -v pg_isready &> /dev/null; then
+    if ! pg_isready -h postgres -p 5432 -U backstage -d backstage_plugin_catalog -t 5; then
+        echo "❌ PostgreSQL no está disponible en postgres:5432"
+        echo "Verifica que el container de PostgreSQL esté corriendo y sea accesible."
+        echo "Intentando con timeout más largo (espera de 10 segundos)..."
+        sleep 10
+        if ! pg_isready -h postgres -p 5432 -U backstage -d backstage_plugin_catalog -t 5; then
+            echo "❌ PostgreSQL sigue sin responder después de la espera."
+            echo "Puedes continuar manualmente - la configuración se aplicará, pero el backend podría fallar al iniciar."
+        else
+            echo "✅ PostgreSQL está corriendo (después de espera)"
+        fi
     else
-        echo "✅ PostgreSQL está corriendo (después de espera)"
+        echo "✅ PostgreSQL está corriendo"
     fi
 else
-    echo "✅ PostgreSQL está corriendo"
+    echo "⚠️ pg_isready no encontrado. No se puede verificar la conexión a PostgreSQL automáticamente."
+    echo "Asegúrate de que PostgreSQL esté corriendo y sea accesible en 'postgres:5432'."
 fi
 
-# Crear directorio de ejemplos si no existe
+
+# 5. Crear directorio de ejemplos si no existe
 mkdir -p examples
 
 echo "👥 Creando entidades de ejemplo..."
@@ -155,6 +178,7 @@ EOF
 
 echo "🔧 Configurando variables de entorno..."
 # Crear archivo de variables de entorno
+# These are already set by docker-compose.yml for the devcontainer, but good for local dev.
 cat > .env << 'EOF'
 # Configuración de base de datos
 POSTGRES_HOST=postgres
@@ -168,10 +192,18 @@ BACKEND_URL=http://localhost:7007
 FRONTEND_URL=http://localhost:3000
 EOF
 
+# 6. Instalar todas las dependencias de la aplicación Backstage
+echo "⚙️ Instalando todas las dependencias de la aplicación Backstage..."
+yarn install
+
+# 7. Construir la aplicación Backstage
+echo "🏗️ Construyendo la aplicación Backstage..."
+yarn build:all
+
 echo "✅ Configuración completada!"
 echo ""
 echo "🎯 Próximos pasos:"
-echo "1. cd $BACKSTAGE_DIR"
+echo "1. cd $BACKSTAGE_APP_NAME"
 echo "2. yarn start"
 echo ""
 echo "🌐 URLs disponibles:"
