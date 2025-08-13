@@ -1,5 +1,16 @@
 #!/bin/bash
 
+
+# Verificar que yarn y npx están instalados
+if ! command -v yarn &> /dev/null; then
+  echo "❌ 'yarn' no está instalado. Instálalo antes de continuar."
+  exit 1
+fi
+if ! command -v npx &> /dev/null; then
+  echo "❌ 'npx' no está instalado. Instala Node.js y npm antes de continuar."
+  exit 1
+fi
+
 # Script de configuración para Backstage Lab
 echo "🚀 Configurando Backstage Lab..."
 
